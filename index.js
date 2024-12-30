@@ -14,7 +14,7 @@ connectToDatabase();
 
 const app = express();
 
-// Enable CORS
+// Enable CORS globally
 app.use(
   cors({
     origin: "https://akc-ems.vercel.app", // Frontend origin
