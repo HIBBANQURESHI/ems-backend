@@ -17,7 +17,7 @@ const app = express();
 // Enable CORS globally
 app.use(
   cors({
-    origin: "https://akc-ems.vercel.app", // Frontend origin
+    origin: ["https://akc-ems.vercel.app"], // Frontend origin
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Allowed methods
     allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
     credentials: true, // Allow cookies and credentials
