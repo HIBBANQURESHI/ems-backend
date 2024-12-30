@@ -39,7 +39,7 @@ app.use("/api/employee", employeeRouter);
 app.use('/public/uploads', express.static('public/uploads'));
 
 // Start the server
-const PORT = process.env.PORT || 5000; // Default to 5000 if PORT is not set
+const PORT = process.env.PORT
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
