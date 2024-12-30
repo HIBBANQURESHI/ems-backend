@@ -18,20 +18,24 @@ const app = express();
 app.use(
   cors({
     origin: "https://akc-ems.vercel.app", // Allow requests from your frontend
-    credentials: true, // Allow cookies and credentials to be included
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Allow specific HTTP methods
+    allowedHeaders: ["Content-Type", "Authorization"], // Allow specific headers
+    credentials: true, // Allow cookies and credentials
   })
 );
 
 // Parse incoming JSON requests
 app.use(express.json());
 
-// Serve static files
-app.use('/public/uploads', express.static('public/uploads'));
+
 
 // API Routes
 app.use("/api/auth", authRouter);
 app.use("/api/department", departmentRouter);
 app.use("/api/employee", employeeRouter);
+
+// Serve static files
+app.use('/public/uploads', express.static('public/uploads'));
 
 // Start the server
 const PORT = process.env.PORT
