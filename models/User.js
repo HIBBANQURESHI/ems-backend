@@ -8,7 +8,9 @@ const userSchema = new mongoose.Schema({
     profileImage : {type: String},
     createAt : {type: Date, default: Date.now},
     updateAt : {type: Date, default: Date.now}
-})
+});
 
+userSchema.index({ email: 1 });
+ 
 const User = mongoose.model("User", userSchema)
 export default User 
