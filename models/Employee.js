@@ -8,12 +8,18 @@ const employeeSchema = new Schema({
     gender: { type: String },
     martialStatus: { type: String },
     designation: { type: String },
-    department: { type:String},
+    department: { type: String },
     salary: { type: Number, required: true },
-    createdAt: {type:Date, default: Date.now},
-    updatedAt: {type:Date, default: Date.now},    
+    attendance: [
+        {
+            date: { type: Date, required: true },
+            status: { type: String, enum: ["Present", "Absent", "Leave"], required: true },
+        },
+    ],
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now },
 });
 
-const Employee  = mongoose.model("Employee", employeeSchema)
+const Employee = mongoose.model("Employee", employeeSchema);
 
 export default Employee;
