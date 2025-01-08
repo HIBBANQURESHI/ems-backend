@@ -1,5 +1,5 @@
-import mongoose from "mongoose";
-import { Schema } from "mongoose";
+import mongoose from 'mongoose';
+import { Schema } from 'mongoose';
 
 const employeeSchema = new Schema({
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -20,6 +20,11 @@ const employeeSchema = new Schema({
     updatedAt: { type: Date, default: Date.now },
 });
 
-const Employee = mongoose.model("Employee", employeeSchema);
+employeeSchema.methods.getCurrentMonthAttendance = function () {
+    const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    return this.attendance.filter((entry) => new Date(entry.date).getMonth() === firstDayOfMonth.getMonth());
+};
+
+const Employee = mongoose.model('Employee', employeeSchema);
 
 export default Employee;

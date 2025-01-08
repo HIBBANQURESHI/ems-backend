@@ -142,6 +142,32 @@ const updateEmployee = async (req,res) => {
 //        return res.status(500).json({ success: false, error: "Delete Employee Server Error!" });
 //    }
 //};
+export const getEmployeeDetails = async (req, res) => {
+    try {
+        const employee = await Employee.findOne({ employeeId: req.user.employeeId }).populate('userId');
+        if (!employee) {
+            return res.status(404).json({ success: false, message: 'Employee not found' });
+        }
+
+        const currentMonthAttendance = employee.getCurrentMonthAttendance();
+        const totalAttendance = currentMonthAttendance.length;
+
+        return res.status(200).json({
+            success: true,
+            employee: {
+                name: employee.userId.name,
+                employeeId: employee.employeeId,
+                department: employee.department,
+                salary: employee.salary,
+                totalAttendance,
+                currentMonthAttendance,
+            },
+        });
+    } catch (error) {
+        console.error("Error fetching employee details:", error);
+        return res.status(500).json({ success: false, error: "Server error" });
+    }
+};
 
 
 
