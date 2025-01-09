@@ -10,12 +10,6 @@ const employeeSchema = new Schema({
     designation: { type: String },
     department: { type: String },
     salary: { type: Number, required: true },
-    attendance: [
-        {
-            date: { type: Date, required: true },
-            status: { type: String, enum: ["Present", "Absent", "Leave"], required: true },
-        },
-    ],
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
 });

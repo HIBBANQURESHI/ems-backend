@@ -3,6 +3,7 @@ import cors from "cors";
 import authRouter from "./routes/auth.js";
 import departmentRouter from "./routes/department.js";
 import employeeRouter from "./routes/employee.js";
+import attendanceRoutes from './routes/attendanceRoutes.js';
 import connectToDatabase from "./db/db.js";
 import dotenv from "dotenv";
 
@@ -34,6 +35,8 @@ app.use(express.json());
 app.use("/api/auth", authRouter);
 app.use("/api/department", departmentRouter);
 app.use("/api/employee", employeeRouter);
+app.use('/api/attendance', attendanceRoutes);
+
 
 // Serve static files
 app.use('/public/uploads', express.static('public/uploads'));

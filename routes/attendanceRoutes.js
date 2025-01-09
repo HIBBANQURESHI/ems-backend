@@ -4,7 +4,7 @@ import { markAttendance, getAttendanceByDate } from '../controllers/attendanceCo
 
 const router = express.Router();
 
-// Mark attendance for employees
+// Mark attendance
 router.post('/mark', authMiddleware, markAttendance);
 
 // Get attendance by date
