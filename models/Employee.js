@@ -8,7 +8,7 @@ const employeeSchema = new Schema({
     gender: { type: String },
     martialStatus: { type: String },
     designation: { type: String },
-    department: { type: String },
+    department: {  type: String },
     salary: { type: Number, required: true },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },

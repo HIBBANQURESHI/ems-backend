@@ -169,8 +169,26 @@ export const getEmployeeDetails = async (req, res) => {
     }
 };
 
+const fetchEmployeesByDepId = async (req, res) => {
+    const { id } = req.params;
+    try {
+      // Ensure the department ID is correctly casted to ObjectId if it's a MongoDB ObjectId
+      const employees = await Employee.find({ department: id }).populate('userId');
+      
+      if (!employees.length) {
+        return res.status(404).json({ success: false, error: "No employees found for this department" });
+      }
+  
+      return res.status(200).json({ success: true, employees });
+    } catch (error) {
+      console.error("Error fetching employees by department ID:", error);
+      return res.status(500).json({ success: false, error: "Error fetching employees by department" });
+    }
+  };
+  
+  
 
 
 
 
-export{addEmployee, upload, getEmployees, getEmployee, updateEmployee}
+export{addEmployee, upload, getEmployees, getEmployee, updateEmployee, fetchEmployeesByDepId}

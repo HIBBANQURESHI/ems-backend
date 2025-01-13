@@ -4,6 +4,7 @@ import authRouter from "./routes/auth.js";
 import departmentRouter from "./routes/department.js";
 import employeeRouter from "./routes/employee.js";
 import attendanceRoutes from './routes/attendanceRoutes.js';
+import salaryRouter from './routes/salary.js'
 import connectToDatabase from "./db/db.js";
 import dotenv from "dotenv";
 
@@ -17,12 +18,7 @@ const app = express();
 
 // Enable CORS globally
 app.use(
-  cors({
-    origin: ["https://akc-ems.vercel.app"], // Frontend origin
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Allowed methods
-    allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
-    credentials: true, // Allow cookies and credentials
-  })
+  cors()
 );
 
 // Handle preflight requests
@@ -36,6 +32,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/department", departmentRouter);
 app.use("/api/employee", employeeRouter);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/salary', salaryRouter);
 
 
 // Serve static files
