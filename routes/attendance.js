@@ -1,5 +1,5 @@
 import express from 'express'
-import { markAttendance, getMonthlyAttendance } from '../controllers/attendanceContoller.js';
+import { markAttendance, getAttendanceRecords } from '../controllers/attendanceContoller.js';
 import authMiddleware from '../middleware/authMiddlware.js'
 
 const router = express.Router();
@@ -8,6 +8,6 @@ const router = express.Router();
 router.post('/mark', authMiddleware, markAttendance);
 
 // Route to view attendance for a specific month
-router.get('/view', authMiddleware, getMonthlyAttendance);
+router.get('/records', authMiddleware, getAttendanceRecords);
 
 export default router
