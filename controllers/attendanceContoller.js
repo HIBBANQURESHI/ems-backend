@@ -1,7 +1,6 @@
 import Attendance from '../models/Attendance.js';
 import Employee  from '../models/Employee.js';
 
-// Mark attendance for a specific employee
 export const markAttendance = async (req, res) => {
     console.log(req.body); // Log the request body to debug
     const { attendanceData } = req.body;
