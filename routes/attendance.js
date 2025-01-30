@@ -1,13 +1,12 @@
 import express from 'express'
-import { markAttendance, getAttendanceRecords } from '../controllers/attendanceContoller.js';
-import authMiddleware from '../middleware/authMiddlware.js'
+import { attendanceReport, getAttendance, updateAttendance } from '../controllers/attendanceController.js';
+import authMiddleware from '../middleware/authMiddlware.js';
+import defaultAttendance from '../middleware/defaultAttendance.js';
 
-const router = express.Router();
+const router = express.Router()
 
-// Route to mark attendance
-router.post('/mark', authMiddleware, markAttendance);
+router.get('/',authMiddleware, defaultAttendance, getAttendance)
+router.put('/update/:employeeId',authMiddleware, updateAttendance)
+router.get('/report',authMiddleware, attendanceReport)
 
-// Route to view attendance for a specific month
-router.get('/records', authMiddleware, getAttendanceRecords);
-
-export default router
+export default router;
