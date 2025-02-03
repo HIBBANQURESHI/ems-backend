@@ -94,7 +94,7 @@ const getEmployee = async (req, res) => {
       if(!employee) {
         employee = await Employee.findOne({ userId: id })
       .populate("userId", { password: 0 })
-      .populate("department");
+      .populate("department", "dep_name");
       }
     return res.status(200).json({ success: true, employee });
   } catch (error) {
