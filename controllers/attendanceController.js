@@ -5,8 +5,13 @@ const getAttendance = async (req, res) => {
     try {
         const date = new Date().toISOString().split('T')[0]; // Format as YYYY-MM-DD
 
-        const attendance = await Attendance.find({ date }).populate('employeeId');
-
+        const attendance = await Attendance.find({ date }).populate({
+            path: "employeeId",
+            populate: [
+                { path: "userId", select: "name" },  // Populate name
+                { path: "department", select: "dep_name" } // Populate department
+            ]
+        });
 
         if (!attendance || attendance.length === 0) {
             return res.status(404).json({ success: false, message: "No attendance records found." });
@@ -36,7 +41,7 @@ const updateAttendance = async (req, res) => {
         const attendance = await Attendance.findOneAndUpdate(
             { employeeId: employee._id, date },
             { status },
-            { new: true }
+            { new: true, upsert: true }
         );
 
         if (!attendance) {
