@@ -26,35 +26,18 @@ const getAttendance = async (req, res) => {
 
 const updateAttendance = async (req, res) => {
     try {
-        const { employeeId } = req.params;
-        const { status } = req.body;
-        const date = new Date().toISOString().split('T')[0];
+        const {employeeId} = req.params
+        const {status} = req.body
+        const date = new Date().toISOString().split('T')[0]
+        const employee = await Employee.findOne({employeeId})
 
-        // Find employee by employeeId
-        const employee = await Employee.findById(employeeId);
+        const attendance = await Attendance.findOneAndUpdate({employeeId: employee._id, date}, {status}, {new: true})
 
-        if (!employee) {
-            return res.status(404).json({ success: false, message: "Employee not found" });
-        }
-
-        // Update attendance for the specific employee on the current date
-        const attendance = await Attendance.findOneAndUpdate(
-            { employeeId: employee._id, date },
-            { status },
-            { new: true, upsert: true }
-        );
-
-        if (!attendance) {
-            return res.status(404).json({ success: false, message: "Attendance record not found" });
-        }
-
-        res.status(200).json({ success: true, attendance });
-    } catch (error) {
-        console.log(error); // Log the error for better debugging
-        res.status(500).json({ success: false, message: error.message });
+        res.status(200).json({success: true, attendance})
+    } catch(error) {
+        res.status(500).json({success:false , message: error.message})
     }
 };
-
 
 const attendanceReport = async (req, res) => {
     try {
