@@ -44,65 +44,88 @@ const updateAttendance = async (req, res) => {
 const attendanceReport = async (req, res) => {
     try {
         const { month, year } = req.query;
+        const query = {};
 
-        if (!month || !year) {
-            return res.status(400).json({ success: false, message: "Month and Year are required." });
+        if (month && year) {
+            const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
+            const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+        
+            query.date = { $gte: startDate, $lte: endDate };
         }
 
-        // Calculate the start and end date for the month
-        const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
-        const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+        const attendanceData = await Attendance.find(query)
+            .populate({
+                path: "employeeId",
+                populate: ["department", "userId"]
+            })
+            .sort({ date: -1 })
+            .skip(parseInt(skip))
+            .limit(parseInt(limit));
 
-        // Fetch the attendance data
-        const attendanceCount = await Attendance.aggregate([
-            {
-                $match: { date: { $gte: startDate, $lte: endDate } }
-            },
-            {
-                $group: {
-                    _id: "$employeeId",
-                    totalPresent: {
-                        $sum: { $cond: [{ $eq: ["$status", "Present"] }, 1, 0] }
-                    },
-                    totalAbsent: {
-                        $sum: { $cond: [{ $eq: ["$status", "Absent"] }, 1, 0] }
-                    }
-                }
-            },
-            {
-                $lookup: {
-                    from: "employees",
-                    localField: "_id",
-                    foreignField: "_id",
-                    as: "employee"
-                }
-            },
-            { $unwind: "$employee" },
-            {
-                $lookup: {
-                    from: "users",
-                    localField: "employee.userId",
-                    foreignField: "_id",
-                    as: "user"
-                }
-            },
-            { $unwind: "$user" },
-            {
-                $project: {
-                    _id: 0,
-                    employeeId: "$employee.employeeId",
-                    employeeName: "$user.name",
-                    totalPresent: 1,
-                    totalAbsent: 1
-                }
+        const groupData = attendanceData.reduce((result, record) => {
+            if (!result[record.date]) {
+                result[record.date] = [];
             }
-        ]);
+            result[record.date].push({
+                employeeId: record.employeeId.employeeId,
+                employeeName: record.employeeId.userId.name,
+                departmentName: record.employeeId.department.dep_name,
+                status: record.status || "Not Marked"
+            });
+            return result;
+        }, {});
 
-        return res.status(200).json({ success: true, attendanceCount });
+        // Count total attendance per employee
+        const attendanceCount = await Attendance.aggregate([
+    {
+        $match: { date: { $gte: startDate, $lte: endDate } }
+    },
+    {
+        $group: {
+            _id: "$employeeId",
+            totalPresent: {
+                $sum: { $cond: [{ $eq: ["$status", "Present"] }, 1, 0] }
+            },
+            totalAbsent: {
+                $sum: { $cond: [{ $eq: ["$status", "Absent"] }, 1, 0] }
+            }
+        }
+    },
+    {
+        $lookup: {
+            from: "employees",
+            localField: "_id",
+            foreignField: "_id",
+            as: "employee"
+        }
+    },
+    { $unwind: "$employee" },
+    {
+        $lookup: {
+            from: "users",
+            localField: "employee.userId",
+            foreignField: "_id",
+            as: "user"
+        }
+    },
+    { $unwind: "$user" },
+    {
+        $project: {
+            _id: 0,
+            employeeId: "$employee.employeeId",
+            employeeName: "$user.name",
+            totalPresent: 1,
+            totalAbsent: 1
+        }
+    }
+]);
+
+return res.status(200).json({ success: true, groupData,attendanceCount });
+
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
-}
+};
 
 
 
