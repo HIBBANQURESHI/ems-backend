@@ -92,5 +92,46 @@ const attendanceReport = async (req, res) => {
     }
 };
 
+const getMonthlyAttendanceSummary = async (req, res) => {
+    try {
+        const { month, year } = req.query;
+        if (!month || !year) {
+            return res.status(400).json({ success: false, message: "Month and year are required." });
+        }
 
-export {getAttendance, updateAttendance, attendanceReport}
+        // Get the first and last date of the given month
+        const startDate = new Date(`${year}-${month}-01`);
+        const endDate = new Date(year, month, 0);
+
+        // Fetch attendance records for the month
+        const attendanceData = await Attendance.find({
+            date: { $gte: startDate.toISOString().split('T')[0], $lte: endDate.toISOString().split('T')[0] }
+        }).populate("employeeId");
+
+        // Group attendance by employee
+        const employeeAttendance = {};
+        attendanceData.forEach(record => {
+            const empId = record.employeeId._id;
+            if (!employeeAttendance[empId]) {
+                employeeAttendance[empId] = { 
+                    name: record.employeeId.userId.name,
+                    department: record.employeeId.department.dep_name,
+                    presents: 0,
+                    absents: 0,
+                    sick: 0,
+                    leave: 0
+                };
+            }
+            employeeAttendance[empId][record.status.toLowerCase()]++;
+        });
+
+        return res.status(200).json({ success: true, data: Object.values(employeeAttendance) });
+
+    } catch (error) {
+        console.error("Error fetching monthly attendance:", error);
+        res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+};
+
+
+export {getAttendance, updateAttendance, attendanceReport, getMonthlyAttendanceSummary}

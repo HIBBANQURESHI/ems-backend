@@ -1,5 +1,5 @@
 import express from 'express'
-import { attendanceReport, getAttendance, updateAttendance } from '../controllers/attendanceController.js';
+import { attendanceReport, getAttendance, updateAttendance, getMonthlyAttendanceSummary } from '../controllers/attendanceController.js';
 import authMiddleware from '../middleware/authMiddlware.js';
 import defaultAttendance from '../middleware/defaultAttendance.js';
 
@@ -8,5 +8,7 @@ const router = express.Router()
 router.get('/',authMiddleware, defaultAttendance, getAttendance)
 router.put('/update/:employeeId',authMiddleware, updateAttendance)
 router.get('/report',authMiddleware, attendanceReport)
+router.get('/monthly-summary', authMiddleware, getMonthlyAttendanceSummary);
+
 
 export default router;
