@@ -43,39 +43,20 @@ const updateAttendance = async (req, res) => {
 
 const attendanceReport = async (req, res) => {
     try {
-        const { date, limit = 5, skip = 0 } = req.query;
-        const query = {};
+        const { month, year } = req.query;
 
-        if (date) {
-            query.date = date;
+        if (!month || !year) {
+            return res.status(400).json({ success: false, message: "Month and Year are required." });
         }
 
-        const attendanceData = await Attendance.find(query)
-            .populate({
-                path: "employeeId",
-                populate: ["department", "userId"]
-            })
-            .sort({ date: -1 })
-            .skip(parseInt(skip))
-            .limit(parseInt(limit));
+        // Calculate the start and end date for the month
+        const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
+        const endDate = new Date(year, month, 0).toISOString().split('T')[0];
 
-        const groupData = attendanceData.reduce((result, record) => {
-            if (!result[record.date]) {
-                result[record.date] = [];
-            }
-            result[record.date].push({
-                employeeId: record.employeeId.employeeId,
-                employeeName: record.employeeId.userId.name,
-                departmentName: record.employeeId.department.dep_name,
-                status: record.status || "Not Marked"
-            });
-            return result;
-        }, {});
-
-        // Count total attendance per employee
+        // Fetch the attendance data
         const attendanceCount = await Attendance.aggregate([
             {
-                $match: { date: new Date().toISOString().split('T')[0] } // ✅ Filter only today's attendance
+                $match: { date: { $gte: startDate, $lte: endDate } }
             },
             {
                 $group: {
@@ -115,13 +96,13 @@ const attendanceReport = async (req, res) => {
                     totalAbsent: 1
                 }
             }
-        ]);        
+        ]);
 
-        return res.status(200).json({ success: true, groupData, attendanceCount });
+        return res.status(200).json({ success: true, attendanceCount });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
-};
+}
 
 
 
