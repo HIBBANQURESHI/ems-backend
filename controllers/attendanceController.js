@@ -1,5 +1,7 @@
 import Attendance from '../models/Attendance.js'
 import Employee from '../models/Employee.js'
+import mongoose from "mongoose";
+
 
 const getAttendance = async (req, res) => {
     try {
@@ -31,7 +33,7 @@ const updateAttendance = async (req, res) => {
         const date = new Date().toISOString().split('T')[0]
         const employee = await Employee.findOne({employeeId})
 
-        const attendance = await Attendance.findOneAndUpdate({employeeId: employee._id, date}, {status}, {new: true})
+        const attendance = await Attendance.findOneAndUpdate({employeeId: new mongoose.Types.ObjectId(employee._id), date}, {status}, {new: true, upsert: true})
 
         res.status(200).json({success: true, attendance})
     } catch(error) {
@@ -73,6 +75,9 @@ const attendanceReport = async (req, res) => {
         // Count total attendance per employee
         const attendanceCount = await Attendance.aggregate([
             {
+                $match: { date: new Date().toISOString().split('T')[0] } // ✅ Filter only today's attendance
+            },
+            {
                 $group: {
                     _id: "$employeeId",
                     totalPresent: {
@@ -91,9 +96,7 @@ const attendanceReport = async (req, res) => {
                     as: "employee"
                 }
             },
-            {
-                $unwind: "$employee"
-            },
+            { $unwind: "$employee" },
             {
                 $lookup: {
                     from: "users",
@@ -102,9 +105,7 @@ const attendanceReport = async (req, res) => {
                     as: "user"
                 }
             },
-            {
-                $unwind: "$user"
-            },
+            { $unwind: "$user" },
             {
                 $project: {
                     _id: 0,
@@ -114,7 +115,7 @@ const attendanceReport = async (req, res) => {
                     totalAbsent: 1
                 }
             }
-        ]);
+        ]);        
 
         return res.status(200).json({ success: true, groupData, attendanceCount });
     } catch (error) {
