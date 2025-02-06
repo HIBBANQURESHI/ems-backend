@@ -31,7 +31,7 @@ const updateAttendance = async (req, res) => {
         const date = new Date().toISOString().split('T')[0];
 
         // Find employee by employeeId
-        const employee = await Employee.findOne({ _id: employeeId });
+        const employee = await Employee.findById(employeeId);
 
         if (!employee) {
             return res.status(404).json({ success: false, message: "Employee not found" });
