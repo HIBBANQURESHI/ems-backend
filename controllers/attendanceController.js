@@ -125,4 +125,4 @@ const attendanceReport = async (req, res) => {
 
 
 
-export {getAttendance, updateAttendance, attendanceReport}
+export {getAttendance, updateAttendance, attendanceReport} 
