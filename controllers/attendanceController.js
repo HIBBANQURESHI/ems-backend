@@ -75,7 +75,12 @@ const attendanceReport = async (req, res) => {
         // Count total attendance per employee
         const attendanceCount = await Attendance.aggregate([
             {
-                $match: { date: new Date().toISOString().split('T')[0] } // ✅ Filter only today's attendance
+                $match: {
+                    date: {
+                        $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1), // First day of the month
+                        $lte: new Date() // Current day
+                    }
+                }
             },
             {
                 $group: {
