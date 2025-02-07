@@ -70,19 +70,62 @@ const attendanceReport = async (req, res) => {
                 status: record.status || "Not Marked"
             })
             return result;
-        }, {});
-
-        // Calculate Totals:
-        const totals = attendanceData.reduce((acc, record) => {
-            const status = record.status || "Not Marked"; // Handle "Not Marked"
-            acc[status] = (acc[status] || 0) + 1; // Increment counts
-            return acc;
-        }, {});
-
-        return res.status(200).json({success: true, groupData, totals})
+        }, {})
+        return res.status(201).json({success: true, groupData})
     } catch(error) {
         res.status(500).json({success:false , message: error.message})
     }
 };
 
-export {getAttendance, updateAttendance, attendanceReport} 
+const getMonthlySummary = async (req, res) => {
+    try {
+        const { month, year } = req.query;
+        
+        // Validate inputs
+        if (!month || !year || isNaN(month) || isNaN(year)) {
+            return res.status(400).json({ success: false, message: "Invalid month/year" });
+        }
+
+        const startDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 0);
+
+        const summary = await Attendance.aggregate([
+            {
+                $match: {
+                    date: {
+                        $gte: startDate.toISOString().split('T')[0],
+                        $lte: endDate.toISOString().split('T')[0]
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: "$status",
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        // Convert array to object with default values
+        const result = summary.reduce((acc, curr) => {
+            acc[curr._id || 'Not Marked'] = curr.count;
+            return acc;
+        }, {});
+
+        res.status(200).json({
+            success: true,
+            summary: {
+                present: result.Present || 0,
+                absent: result.Absent || 0,
+                sick: result.Sick || 0,
+                leave: result.Leave || 0,
+                notMarked: result['Not Marked'] || 0
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+
+export {getAttendance, updateAttendance, attendanceReport, getMonthlySummary} 
