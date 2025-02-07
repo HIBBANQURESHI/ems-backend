@@ -76,47 +76,5 @@ const attendanceReport = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
-const getMonthlyAttendanceSummary = async (req, res) => {
-    try {
-        const { employeeId, month, year } = req.query;
 
-        if (!employeeId || !month || !year) {
-            return res.status(400).json({ success: false, message: "Employee ID, month, and year are required." });
-        }
-        if (month < 1 || month > 12) {
-            return res.status(400).json({ success: false, message: "Invalid month." });
-        }
-        const startDate = new Date(year, month - 1, 1);
-        const endDate = new Date(year, month, 0); 
-        const attendanceData = await Attendance.find({
-            employeeId: new mongoose.Types.ObjectId(employeeId),
-            date: { $gte: startDate.toISOString().split('T')[0], $lte: endDate.toISOString().split('T')[0] }
-        });
-
-        if (!attendanceData || attendanceData.length === 0) {
-            return res.status(404).json({ success: false, message: "No attendance records found for this employee in the given month." });
-        }
-
-        // Calculate the total number of Present and Absent days
-        const attendanceSummary = attendanceData.reduce((summary, record) => {
-            if (record.status === "Present") {
-                summary.present += 1;
-            } else if (record.status === "Absent") {
-                summary.absent += 1;
-            }
-            return summary;
-        }, { present: 0, absent: 0 });
-
-        res.status(200).json({
-            success: true,
-            attendanceSummary,
-            totalDays: attendanceData.length,
-        });
-    } catch (error) {
-        console.log('Error in getMonthlyAttendanceSummary controller:', error);
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
-
-
-export {getAttendance, updateAttendance, attendanceReport, getMonthlyAttendanceSummary} 
+export {getAttendance, updateAttendance, attendanceReport} 
