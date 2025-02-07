@@ -81,29 +81,35 @@ const getMonthlySummary = async (req, res) => {
     try {
         const { month, year } = req.query;
         
-        // Convert to numbers and validate
-        const numericMonth = Number(month);
-        const numericYear = Number(year);
+        // Validate inputs
+        const numericMonth = parseInt(month);
+        const numericYear = parseInt(year);
         
         if (isNaN(numericMonth) || isNaN(numericYear) || 
             numericMonth < 1 || numericMonth > 12 ||
             numericYear < 2000 || numericYear > 2100) {
-            return res.status(400).json({ success: false, message: "Invalid month/year" });
+            return res.status(400).json({ 
+                success: false, 
+                message: "Invalid month/year provided" 
+            });
         }
 
+        // Create date range (first to last day of month)
         const startDate = new Date(numericYear, numericMonth - 1, 1);
         const endDate = new Date(numericYear, numericMonth, 0);
+        
+        // Format dates to match database format (YYYY-MM-DD)
+        const start = startDate.toISOString().split('T')[0];
+        const end = endDate.toISOString().split('T')[0];
 
-        // Add console logs for debugging
-        console.log(`Fetching summary for ${numericMonth}-${numericYear}`);
-        console.log(`Date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
+        console.log(`Querying from ${start} to ${end}`);
 
-        const summary = await Attendance.aggregate([
+        const aggregation = await Attendance.aggregate([
             {
                 $match: {
-                    date: {
-                        $gte: startDate.toISOString().split('T')[0],
-                        $lte: endDate.toISOString().split('T')[0]
+                    date: { 
+                        $gte: start, 
+                        $lte: end 
                     }
                 }
             },
@@ -115,29 +121,32 @@ const getMonthlySummary = async (req, res) => {
             }
         ]);
 
-        console.log('Raw aggregation result:', summary);
+        console.log('Aggregation result:', aggregation);
 
-        // Handle case for null status
-        const result = summary.reduce((acc, curr) => {
-            const status = curr._id || 'Not Marked';
-            acc[status.toLowerCase()] = curr.count;
+        // Transform results with default values
+        const summary = aggregation.reduce((acc, curr) => {
+            const status = curr._id?.toLowerCase() || 'not marked';
+            acc[status] = curr.count;
             return acc;
         }, {});
 
         res.status(200).json({
             success: true,
             summary: {
-                present: result.present || 0,
-                absent: result.absent || 0,
-                sick: result.sick || 0,
-                leave: result.leave || 0,
-                notMarked: result['not marked'] || 0
+                present: summary.present || 0,
+                absent: summary.absent || 0,
+                sick: summary.sick || 0,
+                leave: summary.leave || 0,
+                notMarked: summary['not marked'] || 0
             }
         });
 
     } catch (error) {
-        console.error('Error in monthly summary:', error);
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Monthly summary error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message 
+        });
     }
 };
 
@@ -145,9 +154,21 @@ const getEmployeeTotals = async (req, res) => {
     try {
         const { employeeId } = req.params;
         
+        // Find the employee by employeeId (not _id)
+        const employee = await Employee.findOne({ employeeId });
+        if (!employee) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Employee not found" 
+            });
+        }
+
+        // Aggregate attendance counts grouped by status
         const totals = await Attendance.aggregate([
-            {
-                $match: { employeeId: mongoose.Types.ObjectId(employeeId) }
+            { 
+                $match: { 
+                    employeeId: employee._id 
+                } 
             },
             {
                 $group: {
@@ -157,24 +178,34 @@ const getEmployeeTotals = async (req, res) => {
             }
         ]);
 
-        const result = totals.reduce((acc, curr) => {
-            acc[curr._id.toLowerCase()] = curr.count;
-            return acc;
-        }, {});
+        // Format the response, ensuring missing statuses are included with 0 count
+        const result = {
+            present: 0,
+            absent: 0,
+            sick: 0,
+            leave: 0
+        };
+
+        totals.forEach(record => {
+            const status = record._id?.toLowerCase();
+            if (status) {
+                result[status] = record.count;
+            }
+        });
 
         res.status(200).json({
             success: true,
-            totals: {
-                present: result.present || 0,
-                absent: result.absent || 0,
-                sick: result.sick || 0,
-                leave: result.leave || 0
-            }
+            employeeId,
+            totals: result
         });
+
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Employee totals error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message 
+        });
     }
 };
-
 
 export {getAttendance, updateAttendance, attendanceReport, getMonthlySummary, getEmployeeTotals} 
