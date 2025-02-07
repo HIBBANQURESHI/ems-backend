@@ -70,8 +70,16 @@ const attendanceReport = async (req, res) => {
                 status: record.status || "Not Marked"
             })
             return result;
-        }, {})
-        return res.status(201).json({success: true, groupData})
+        }, {});
+
+        // Calculate Totals:
+        const totals = attendanceData.reduce((acc, record) => {
+            const status = record.status || "Not Marked"; // Handle "Not Marked"
+            acc[status] = (acc[status] || 0) + 1; // Increment counts
+            return acc;
+        }, {});
+        
+        return res.status(200).json({success: true, groupData})
     } catch(error) {
         res.status(500).json({success:false , message: error.message})
     }
