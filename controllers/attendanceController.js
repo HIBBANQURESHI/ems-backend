@@ -43,37 +43,37 @@ const updateAttendance = async (req, res) => {
 
 const attendanceReport = async (req, res) => {
     try {
-        const { date, limit = 5, skip = 0 } = req.query;
+        const {date, limit = 5, skip = 0 } = req.query;
         const query = {};
 
-        if (date) {
+        if(date) {
             query.date = date;
         }
 
         const attendanceData = await Attendance.find(query)
-            .populate({
-                path: "employeeId",
-                populate: ["department", "userId"]
-            })
-            .sort({ date: -1 })
-            .skip(parseInt(skip))
-            .limit(parseInt(limit));
+        .populate({
+            path: "employeeId", 
+            populate: [
+                "department",
+                "userId"
+            ] 
+        }).sort({date: -1}).skip(parseInt(skip)).limit(parseInt(limit))
 
         const groupData = attendanceData.reduce((result, record) => {
-            if (!result[record.date]) {
-                result[record.date] = [];
+            if(!result[record.date]) {
+                result[record.date] = []
             }
             result[record.date].push({
                 employeeId: record.employeeId.employeeId,
                 employeeName: record.employeeId.userId.name,
                 departmentName: record.employeeId.department.dep_name,
                 status: record.status || "Not Marked"
-            });
+            })
             return result;
-        }, {});
-        return res.status(200).json({ success: true, groupData, attendanceCount });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        }, {})
+        return res.status(201).json({success: true, groupData})
+    } catch(error) {
+        res.status(500).json({success:false , message: error.message})
     }
 };
 
