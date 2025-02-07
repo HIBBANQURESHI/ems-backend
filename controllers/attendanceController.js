@@ -77,7 +77,4 @@ const attendanceReport = async (req, res) => {
     }
 };
 
-
-
-
 export {getAttendance, updateAttendance, attendanceReport} 
