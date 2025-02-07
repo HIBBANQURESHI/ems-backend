@@ -59,34 +59,23 @@ const attendanceReport = async (req, res) => {
             .skip(parseInt(skip))
             .limit(parseInt(limit));
 
-        // Group and summarize attendance per employee
         const groupData = attendanceData.reduce((result, record) => {
-            const employeeId = record.employeeId.employeeId;
-            if (!result[employeeId]) {
-                result[employeeId] = {
-                    employeeId: employeeId,
-                    employeeName: record.employeeId.userId.name,
-                    departmentName: record.employeeId.department.dep_name,
-                    present: 0,
-                    absent: 0,
-                };
+            if (!result[record.date]) {
+                result[record.date] = [];
             }
-            if (record.status === "Present") {
-                result[employeeId].present += 1;
-            } else if (record.status === "Absent") {
-                result[employeeId].absent += 1;
-            }
+            result[record.date].push({
+                employeeId: record.employeeId.employeeId,
+                employeeName: record.employeeId.userId.name,
+                departmentName: record.employeeId.department.dep_name,
+                status: record.status || "Not Marked"
+            });
             return result;
         }, {});
-
-        const attendanceSummary = Object.values(groupData);
-
-        return res.status(200).json({ success: true, attendanceSummary });
+        return res.status(200).json({ success: true, groupData, attendanceCount });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 };
-
 const getMonthlyAttendanceSummary = async (req, res) => {
     try {
         const { employeeId, month, year } = req.query;
@@ -107,6 +96,8 @@ const getMonthlyAttendanceSummary = async (req, res) => {
         if (!attendanceData || attendanceData.length === 0) {
             return res.status(404).json({ success: false, message: "No attendance records found for this employee in the given month." });
         }
+
+        // Calculate the total number of Present and Absent days
         const attendanceSummary = attendanceData.reduce((summary, record) => {
             if (record.status === "Present") {
                 summary.present += 1;
