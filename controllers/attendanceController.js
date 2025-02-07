@@ -78,8 +78,8 @@ const attendanceReport = async (req, res) => {
             acc[status] = (acc[status] || 0) + 1; // Increment counts
             return acc;
         }, {});
-        
-        return res.status(200).json({success: true, groupData})
+
+        return res.status(200).json({success: true, groupData, totals})
     } catch(error) {
         res.status(500).json({success:false , message: error.message})
     }
