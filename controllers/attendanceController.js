@@ -77,51 +77,50 @@ const attendanceReport = async (req, res) => {
 
         // Count total attendance per employee
         const attendanceCount = await Attendance.aggregate([
-    {
-        $match: { date: { $gte: startDate, $lte: endDate } }
-    },
-    {
-        $group: {
-            _id: "$employeeId",
-            totalPresent: {
-                $sum: { $cond: [{ $eq: ["$status", "Present"] }, 1, 0] }
+            {
+                $match: { date: new Date().toISOString().split('T')[0] } // ✅ Filter only today's attendance
             },
-            totalAbsent: {
-                $sum: { $cond: [{ $eq: ["$status", "Absent"] }, 1, 0] }
+            {
+                $group: {
+                    _id: "$employeeId",
+                    totalPresent: {
+                        $sum: { $cond: [{ $eq: ["$status", "Present"] }, 1, 0] }
+                    },
+                    totalAbsent: {
+                        $sum: { $cond: [{ $eq: ["$status", "Absent"] }, 1, 0] }
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: "employees",
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "employee"
+                }
+            },
+            { $unwind: "$employee" },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "employee.userId",
+                    foreignField: "_id",
+                    as: "user"
+                }
+            },
+            { $unwind: "$user" },
+            {
+                $project: {
+                    _id: 0,
+                    employeeId: "$employee.employeeId",
+                    employeeName: "$user.name",
+                    totalPresent: 1,
+                    totalAbsent: 1
+                }
             }
-        }
-    },
-    {
-        $lookup: {
-            from: "employees",
-            localField: "_id",
-            foreignField: "_id",
-            as: "employee"
-        }
-    },
-    { $unwind: "$employee" },
-    {
-        $lookup: {
-            from: "users",
-            localField: "employee.userId",
-            foreignField: "_id",
-            as: "user"
-        }
-    },
-    { $unwind: "$user" },
-    {
-        $project: {
-            _id: 0,
-            employeeId: "$employee.employeeId",
-            employeeName: "$user.name",
-            totalPresent: 1,
-            totalAbsent: 1
-        }
-    }
-]);
+        ]);        
 
-return res.status(200).json({ success: true, groupData,attendanceCount });
-
+        return res.status(200).json({ success: true, groupData, attendanceCount });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
