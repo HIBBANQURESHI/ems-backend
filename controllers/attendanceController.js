@@ -59,22 +59,73 @@ const attendanceReport = async (req, res) => {
             .skip(parseInt(skip))
             .limit(parseInt(limit));
 
+        // Group and summarize attendance per employee
         const groupData = attendanceData.reduce((result, record) => {
-            if (!result[record.date]) {
-                result[record.date] = [];
+            const employeeId = record.employeeId.employeeId;
+            if (!result[employeeId]) {
+                result[employeeId] = {
+                    employeeId: employeeId,
+                    employeeName: record.employeeId.userId.name,
+                    departmentName: record.employeeId.department.dep_name,
+                    present: 0,
+                    absent: 0,
+                };
             }
-            result[record.date].push({
-                employeeId: record.employeeId.employeeId,
-                employeeName: record.employeeId.userId.name,
-                departmentName: record.employeeId.department.dep_name,
-                status: record.status || "Not Marked"
-            });
+            if (record.status === "Present") {
+                result[employeeId].present += 1;
+            } else if (record.status === "Absent") {
+                result[employeeId].absent += 1;
+            }
             return result;
         }, {});
-        return res.status(200).json({ success: true, groupData, attendanceCount });
+
+        const attendanceSummary = Object.values(groupData);
+
+        return res.status(200).json({ success: true, attendanceSummary });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 };
 
-export {getAttendance, updateAttendance, attendanceReport} 
+const getMonthlyAttendanceSummary = async (req, res) => {
+    try {
+        const { employeeId, month, year } = req.query;
+
+        if (!employeeId || !month || !year) {
+            return res.status(400).json({ success: false, message: "Employee ID, month, and year are required." });
+        }
+        if (month < 1 || month > 12) {
+            return res.status(400).json({ success: false, message: "Invalid month." });
+        }
+        const startDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 0); 
+        const attendanceData = await Attendance.find({
+            employeeId: new mongoose.Types.ObjectId(employeeId),
+            date: { $gte: startDate.toISOString().split('T')[0], $lte: endDate.toISOString().split('T')[0] }
+        });
+
+        if (!attendanceData || attendanceData.length === 0) {
+            return res.status(404).json({ success: false, message: "No attendance records found for this employee in the given month." });
+        }
+        const attendanceSummary = attendanceData.reduce((summary, record) => {
+            if (record.status === "Present") {
+                summary.present += 1;
+            } else if (record.status === "Absent") {
+                summary.absent += 1;
+            }
+            return summary;
+        }, { present: 0, absent: 0 });
+
+        res.status(200).json({
+            success: true,
+            attendanceSummary,
+            totalDays: attendanceData.length,
+        });
+    } catch (error) {
+        console.log('Error in getMonthlyAttendanceSummary controller:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+
+export {getAttendance, updateAttendance, attendanceReport, getMonthlyAttendanceSummary} 
