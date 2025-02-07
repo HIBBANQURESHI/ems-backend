@@ -43,14 +43,11 @@ const updateAttendance = async (req, res) => {
 
 const attendanceReport = async (req, res) => {
     try {
-        const { month, year } = req.query;
+        const { date, limit = 5, skip = 0 } = req.query;
         const query = {};
 
-        if (month && year) {
-            const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
-            const endDate = new Date(year, month, 0).toISOString().split('T')[0];
-        
-            query.date = { $gte: startDate, $lte: endDate };
+        if (date) {
+            query.date = date;
         }
 
         const attendanceData = await Attendance.find(query)
@@ -78,9 +75,6 @@ const attendanceReport = async (req, res) => {
         // Count total attendance per employee
         const attendanceCount = await Attendance.aggregate([
             {
-                $match: { date: new Date().toISOString().split('T')[0] } // ✅ Filter only today's attendance
-            },
-            {
                 $group: {
                     _id: "$employeeId",
                     totalPresent: {
@@ -99,7 +93,9 @@ const attendanceReport = async (req, res) => {
                     as: "employee"
                 }
             },
-            { $unwind: "$employee" },
+            {
+                $unwind: "$employee"
+            },
             {
                 $lookup: {
                     from: "users",
@@ -108,7 +104,9 @@ const attendanceReport = async (req, res) => {
                     as: "user"
                 }
             },
-            { $unwind: "$user" },
+            {
+                $unwind: "$user"
+            },
             {
                 $project: {
                     _id: 0,
@@ -118,7 +116,7 @@ const attendanceReport = async (req, res) => {
                     totalAbsent: 1
                 }
             }
-        ]);        
+        ]);
 
         return res.status(200).json({ success: true, groupData, attendanceCount });
     } catch (error) {
