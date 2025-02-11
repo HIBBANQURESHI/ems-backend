@@ -5,13 +5,13 @@ import mongoose from "mongoose";
 
 const getAttendance = async (req, res) => {
     try {
-        const date = new Date().toISOString().split('T')[0]; // Format as YYYY-MM-DD
+        const date = new Date().toISOString().split('T')[0];
 
         const attendance = await Attendance.find({ date }).populate({
             path: "employeeId",
             populate: [
-                { path: "userId", select: "name" },  // Populate name
-                { path: "department", select: "dep_name" } // Populate department
+                { path: "userId", select: "name" },
+                { path: "department", select: "dep_name" }
             ]
         });
 
@@ -21,10 +21,11 @@ const getAttendance = async (req, res) => {
 
         res.status(200).json({ success: true, attendance });
     } catch (error) {
-        console.log('Error in getAttendance controller:', error); // Log the error details
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Error in getAttendance:', error);
+        res.status(500).json({ success: false, message: "Server Error: " + error.message });
     }
 };
+
 
 const updateAttendance = async (req, res) => {
     try {
@@ -43,37 +44,49 @@ const updateAttendance = async (req, res) => {
 
 const attendanceReport = async (req, res) => {
     try {
-        const {date, limit = 5, skip = 0 } = req.query;
-        const query = {};
+        const { date, limit = "5", skip = "0" } = req.query;
 
-        if(date) {
-            query.date = date;
+        // Ensure limit and skip are valid numbers
+        const parsedLimit = parseInt(limit);
+        const parsedSkip = parseInt(skip);
+
+        if (isNaN(parsedLimit) || isNaN(parsedSkip)) {
+            return res.status(400).json({ success: false, message: "Invalid limit or skip value" });
         }
 
+        const query = {};
+        if (date) query.date = date;
+
         const attendanceData = await Attendance.find(query)
-        .populate({
-            path: "employeeId", 
-            populate: [
-                "department",
-                "userId"
-            ] 
-        }).sort({date: -1}).skip(parseInt(skip)).limit(parseInt(limit))
+            .populate({
+                path: "employeeId",
+                populate: ["department", "userId"]
+            })
+            .sort({ date: -1 })
+            .skip(parsedSkip)
+            .limit(parsedLimit);
+
+        if (!attendanceData.length) {
+            return res.status(404).json({ success: false, message: "No attendance data found" });
+        }
 
         const groupData = attendanceData.reduce((result, record) => {
-            if(!result[record.date]) {
-                result[record.date] = []
+            if (!result[record.date]) {
+                result[record.date] = [];
             }
             result[record.date].push({
-                employeeId: record.employeeId.employeeId,
-                employeeName: record.employeeId.userId.name,
-                departmentName: record.employeeId.department.dep_name,
+                employeeId: record.employeeId?.employeeId || "N/A",
+                employeeName: record.employeeId?.userId?.name || "Unknown",
+                departmentName: record.employeeId?.department?.dep_name || "Unknown",
                 status: record.status || "Not Marked"
-            })
+            });
             return result;
-        }, {})
-        return res.status(201).json({success: true, groupData})
-    } catch(error) {
-        res.status(500).json({success:false , message: error.message})
+        }, {});
+
+        return res.status(200).json({ success: true, groupData });
+    } catch (error) {
+        console.error("Attendance Report Error:", error);
+        res.status(500).json({ success: false, message: "Server Error: " + error.message });
     }
 };
 

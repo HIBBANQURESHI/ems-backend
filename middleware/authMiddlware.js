@@ -3,28 +3,34 @@ import User from '../models/User.js';
  
 const verifyUser = async (req, res, next) => {
     try {
-        const token = req.headers.authorization.split(' ')[1];
-        if(!token) {
-            return res.status(404).json({success: false, error: "Token Not Provided"})
+        if (!req.headers.authorization) {
+            return res.status(401).json({ success: false, error: "Unauthorized: No token provided" });
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET)
-        if(!decoded) {
-            return res.status(404).json({success: false, error: "Token Not Valid"})
+        const tokenParts = req.headers.authorization.split(' ');
+        if (tokenParts.length !== 2 || tokenParts[0] !== 'Bearer') {
+            return res.status(400).json({ success: false, error: "Invalid token format" });
         }
 
-        const user = await User.findById({_id: decoded._id}).select('-password')
- 
-        if(!user) {
-            return res.status(404).json({success: false, error: "User not found"})
+        const token = tokenParts[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        if (!decoded) {
+            return res.status(401).json({ success: false, error: "Unauthorized: Invalid token" });
         }
 
-        req.user = user
-        next()
-    } catch(error) {
-        console.log(error.message)
-        return res.status(500).json({success: false, error: "server error"+error})
+        const user = await User.findById(decoded._id).select('-password');
+        if (!user) {
+            return res.status(404).json({ success: false, error: "User not found" });
+        }
+
+        req.user = user;
+        next();
+    } catch (error) {
+        console.error("Auth Middleware Error:", error.message);
+        return res.status(500).json({ success: false, error: "Server error: " + error.message });
     }
-}
+};
+
 
 export default verifyUser
