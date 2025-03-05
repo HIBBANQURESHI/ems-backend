@@ -5,9 +5,12 @@ import mongoose from "mongoose";
 
 const getAttendance = async (req, res) => {
     try {
-        const date = new Date().toISOString().split('T')[0];
+        const { date } = req.query;  // Get date from query params
 
-        const attendance = await Attendance.find({ date }).populate({
+        // Use provided date or default to today
+        const selectedDate = date || new Date().toISOString().split('T')[0];
+
+        const attendance = await Attendance.find({ date: selectedDate }).populate({
             path: "employeeId",
             populate: [
                 { path: "userId", select: "name" },
@@ -16,7 +19,7 @@ const getAttendance = async (req, res) => {
         });
 
         if (!attendance || attendance.length === 0) {
-            return res.status(404).json({ success: false, message: "No attendance records found." });
+            return res.status(404).json({ success: false, message: "No attendance records found for this date." });
         }
 
         res.status(200).json({ success: true, attendance });
@@ -25,6 +28,7 @@ const getAttendance = async (req, res) => {
         res.status(500).json({ success: false, message: "Server Error: " + error.message });
     }
 };
+
 
 
 const updateAttendance = async (req, res) => {
