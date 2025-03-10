@@ -173,59 +173,58 @@ const getMonthlySummary = async (req, res) => {
 
 const getEmployeeTotals = async (req, res) => {
     try {
-        const { employeeId } = req.params;
-        
-        // Find the employee by employeeId (not _id)
-        const employee = await Employee.findOne({ employeeId });
-        if (!employee) {
-            return res.status(404).json({ 
-                success: false, 
-                message: "Employee not found" 
-            });
+      const { employeeId } = req.params;
+  
+      // Find the employee by employeeId (not _id)
+      const employee = await Employee.findOne({ employeeId });
+      if (!employee) {
+        return res.status(404).json({
+          success: false,
+          message: "Employee not found",
+        });
+      }
+  
+      // Aggregate attendance counts grouped by status
+      const totals = await Attendance.aggregate([
+        {
+          $match: {
+            employeeId: employee._id,
+          },
+        },
+        {
+          $group: {
+            _id: "$status",
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+  
+      // Format the response, ensuring missing statuses are included with 0 count
+      const result = {
+        present: 0,
+        absent: 0,
+        sick: 0,
+        leave: 0,
+      };
+  
+      totals.forEach((record) => {
+        const status = record._id?.toLowerCase();
+        if (status) {
+          result[status] = record.count;
         }
-
-        // Aggregate attendance counts grouped by status
-        const totals = await Attendance.aggregate([
-            { 
-                $match: { 
-                    employeeId: employee._id 
-                } 
-            },
-            {
-                $group: {
-                    _id: "$status",
-                    count: { $sum: 1 }
-                }
-            }
-        ]);
-
-        // Format the response, ensuring missing statuses are included with 0 count
-        const result = {
-            present: 0,
-            absent: 0,
-            sick: 0,
-            leave: 0
-        };
-
-        totals.forEach(record => {
-            const status = record._id?.toLowerCase();
-            if (status) {
-                result[status] = record.count;
-            }
-        });
-
-        res.status(200).json({
-            success: true,
-            employeeId,
-            totals: result
-        });
-
+      });
+  
+      res.status(200).json({
+        success: true,
+        employeeId,
+        totals: result,
+      });
     } catch (error) {
-        console.error('Employee totals error:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: error.message 
-        });
+      console.error("Employee totals error:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
     }
 };
 
