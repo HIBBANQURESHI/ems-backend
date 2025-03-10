@@ -30,19 +30,23 @@ const getAttendance = async (req, res) => {
 };
 
 
-
 const updateAttendance = async (req, res) => {
     try {
-        const {employeeId} = req.params
-        const {status} = req.body
-        const date = new Date().toISOString().split('T')[0]
-        const employee = await Employee.findOne({employeeId})
+        const { employeeId } = req.params;
+        const { status, date } = req.body;
+        const selectedDate = date || new Date().toISOString().split('T')[0];
 
-        const attendance = await Attendance.findOneAndUpdate({employeeId: new mongoose.Types.ObjectId(employee._id), date}, {status}, {new: true, upsert: true})
+        const employee = await Employee.findOne({ employeeId });
 
-        res.status(200).json({success: true, attendance})
-    } catch(error) {
-        res.status(500).json({success:false , message: error.message})
+        const attendance = await Attendance.findOneAndUpdate(
+            { employeeId: new mongoose.Types.ObjectId(employee._id), date: selectedDate },
+            { status },
+            { new: true, upsert: true }
+        );
+
+        res.status(200).json({ success: true, attendance });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 
