@@ -36,16 +36,22 @@ const updateAttendance = async (req, res) => {
         const { status, date } = req.body;
         const selectedDate = date || new Date().toISOString().split('T')[0];
 
+        // Find the employee by employeeId
         const employee = await Employee.findOne({ employeeId });
+        if (!employee) {
+            return res.status(404).json({ success: false, message: "Employee not found." });
+        }
 
+        // Find or create the attendance record
         const attendance = await Attendance.findOneAndUpdate(
-            { employeeId: new mongoose.Types.ObjectId(employee._id), date: selectedDate },
+            { employeeId: employee._id, date: selectedDate },
             { status },
-            { new: true, upsert: true }
+            { new: true, upsert: true } // Create a new record if it doesn't exist
         );
 
         res.status(200).json({ success: true, attendance });
     } catch (error) {
+        console.error("Update Attendance Error:", error);
         res.status(500).json({ success: false, message: error.message });
     }
 };
