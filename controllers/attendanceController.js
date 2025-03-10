@@ -7,6 +7,12 @@ const getAttendance = async (req, res) => {
     try {
         const { date } = req.query;  // Get date from query params
 
+        // Validate date format
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (date && !dateRegex.test(date)) {
+            return res.status(400).json({ success: false, message: "Invalid date format. Use YYYY-MM-DD." });
+        }
+
         // Use provided date or default to today
         const selectedDate = date || new Date().toISOString().split('T')[0];
 
@@ -18,11 +24,8 @@ const getAttendance = async (req, res) => {
             ]
         });
 
-        if (!attendance || attendance.length === 0) {
-            return res.status(404).json({ success: false, message: "No attendance records found for this date." });
-        }
-
-        res.status(200).json({ success: true, attendance });
+        // Return an empty array if no records exist
+        res.status(200).json({ success: true, attendance: attendance || [] });
     } catch (error) {
         console.error('Error in getAttendance:', error);
         res.status(500).json({ success: false, message: "Server Error: " + error.message });
